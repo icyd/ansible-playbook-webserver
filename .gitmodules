@@ -1,0 +1,9 @@
+[submodule "roles/ansible-aide"]
+	path = roles/ansible-aide
+	url = https://github.com/icyd/ansible-aide
+[submodule "roles/rkhunter-ansible-role"]
+	path = roles/rkhunter-ansible-role
+	url = https://github.com/icyd/rkhunter-ansible-role
+[submodule "roles/ansible-apparmor"]
+	path = roles/ansible-apparmor
+	url = https://github.com/icyd/ansible-apparmor

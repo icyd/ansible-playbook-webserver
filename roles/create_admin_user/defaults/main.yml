@@ -1,0 +1,8 @@
+---
+# defaults file for create_admin_user
+admin_username: "admin"
+admin_password: "1234"
+root_password: "Abcd.1234"
+admin_groups:
+  - "sudo"
+  - "www-data"

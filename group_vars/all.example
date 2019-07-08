@@ -1,0 +1,18 @@
+admin_username: "admin"
+admin_email: 'example@mail.com'
+admin_email_password: 'pass'
+smtp_server: 'smtp.mail.com'
+site_domain: 'example.com'
+site_timezone: 'UTC'
+adminer_user: "admin"
+adminer_password: "{{ lookup('password', 'credentials/adminer/' +
+adminer_user + '/password length=8 encrypt=sha256_crypt') }}"
+db_root_password: '{{ lookup("password",
+"credentials/db_root/password length=18 encrypt=sha256_crypt") }}'
+db_name: "db_name"
+db_user: "db_user"
+db_user_password: "{{ lookup('password', 'credentials/' + db_user +
+'/password length=12 encrypt=sha256_crypt') }}"
+root_password: "{{ lookup('password', 'credentials/root/password length=24 encrypt=sha256_crypt') }}"
+admin_password: "{{ lookup('password', 'credentials/' + admin_username +
+'/password length=12 encrypt=sha256_crypt') }}"

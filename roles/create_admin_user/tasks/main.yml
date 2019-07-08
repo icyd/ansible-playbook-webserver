@@ -1,0 +1,53 @@
+---
+# tasks file for create_admin_user
+- name: Verify {{ admin_groups }} groups are preset
+  group:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ admin_groups }}"
+- name: Create create password for root user
+  user:
+    name: "root"
+    state: present
+    password: "{{ root_password }}"
+- name: Create {{ admin_username }} user
+  user:
+    name: "{{ admin_username }}"
+    state: present
+    create_home: true
+    append: true
+    shell: /bin/bash
+    groups: "{{ admin_groups }}"
+    password: "{{ admin_password }}"
+- name: "Configure sudores for sudo group"
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%sudo'
+    line: "%sudo ALL=(ALL) ALL"
+    validate: visudo -cf %s
+- name: "Configure sudores for admin"
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    insertafter: '^%sudo ALL'
+    line: "admin ALL=(ALL) NOPASSWD:/usr/bin/certbot"
+    validate: visudo -cf %s
+- name: "Add option rootpw to sudoers"
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    insertbefore: "^Defaults"
+    firstmatch: true
+    line: "Defaults rootpw"
+    validate: visudo -cf %s
+- name: Retrieve ssh key managed by gpg
+  command: ssh-add -L
+  delegate_to: localhost
+  become: false
+  register: gpg_ssh_key
+- name: Add key to {{ admin_username }}
+  authorized_key:
+    user: "{{ admin_username }}"
+    state: present
+    key: "{{ gpg_ssh_key.stdout }}"

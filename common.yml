@@ -1,0 +1,92 @@
+---
+- hosts: webservers
+  gather_facts: false
+  pre_tasks:
+    - name: Change ssh port to 22
+      set_fact:
+        ansible_user: root
+        ansible_port: 22
+    - name: Gathering facts
+      setup:
+  roles:
+    - role: create_admin_user
+    - role: dev-sec.ssh-hardening
+      ssh_server_ports: ['2222']
+      ssh_kerberos_support: false
+      ssh_use_pam: true
+      sftp_enabled: true
+      ssh_permit_root_login: "no"
+- hosts: webservers
+  user: "{{ admin_username }}"
+  become: true
+  vars_files: "vars/common.yml"
+  roles:
+    - role: geerlingguy.ntp
+    - role: oefenweb.haveged
+    - role: weareinteractive.ufw
+    - role: oefenweb.postfix
+    - role: jnv.unattended-upgrades
+    - role: geerlingguy.mysql
+    - role: geerlingguy.nginx
+    - role: geerlingguy.php-versions
+    - role: geerlingguy.php
+    - role: geerlingguy.adminer
+    - role: geerlingguy.redis
+    - role: geerlingguy.certbot
+    - role: oefenweb.fail2ban
+    - role: juju4.auditd
+    - role: ansible-apparmor
+    - role: rkhunter-ansible-role
+    - role: ansible-aide
+  post_tasks:
+    - name: Intall python-passlib
+      package:
+        name: python-passlib
+        state: present
+    - name: Create basic auth password
+      htpasswd:
+        path: "/etc/nginx/.htpasswd"
+        name: "{{ adminer_user }}"
+        password: "{{ adminer_password }}"
+        owner: "root"
+        group: "www-data"
+        mode: 0640
+    - name: "{{ 'Make /var/www/html own by a ' + admin_username }}"
+      file:
+        group: 'www-data'
+        owner: 'admin'
+        mode: '2770'
+        path: '/var/www/html'
+        recurse: true
+        state: directory
+    - name: Correct permissions on existing files in /var/www/html
+      shell: 'find /var/www/html -type f -exec chmod 0660 {} \; ;
+      find /var/www/html -type d -exec chmod 2770 {} \;'
+    - name: Check if nginx/snippets directory exists
+      file:
+        path: '/etc/nginx/snippets'
+        state: 'directory'
+        mode: 0755
+        owner: root
+        group: root
+    - name: Copy files /etc/nginx/snippets
+      copy:
+        src: "{{ item }}"
+        dest: '/etc/nginx/snippets'
+        mode: 0644
+        owner: root
+        group: root
+      with_fileglob:
+        - "files/snippets/*.conf"
+    - name: 'Add cron job for certbot renewal.'
+      cron:
+        name: Certbot automatic renewal.
+        job: "sudo {{ certbot_script }} renew {{ certbot_auto_renew_options }}"
+        minute: "{{ certbot_auto_renew_minute }}"
+        hour: "{{ certbot_auto_renew_hour }}"
+        user: "{{ certbot_auto_renew_user }}"
+    - name: Disable default aide cron job
+      lineinfile:
+        path: /etc/default/aide
+        regexp: '^#CRON_DAILY_RUN'
+        line: 'CRON_DAILY_RUN=no'

@@ -1,0 +1,103 @@
+---
+ntp_timezone: "{{ site_timezone }}"
+ufw_rules:
+  - {port: 80, rule: allow, comment: 'Allow HTTP'}
+  - {port: 443, rule: allow, comment: 'Allow HTTPS'}
+  - {port: 2222, rule: allow, comment: 'Allow SSH'}
+postfix_sasl_user: "{{ admin_email }}"
+postfix_sasl_password: "{{ admin_email_password }}"
+postfix_aliases:
+  - user: 'root'
+    alias: '{{ postfix_sasl_user }}'
+postfix_relaytls: true
+postfix_smtp_tls_cafile: /etc/ssl/certs/ca-certificates.crt
+postfix_relayhost: "{{ smtp_server }}"
+fail2ban_mta: 'mail'
+fail2ban_services:
+  - name: sshd
+    port: 2222
+    maxretry: 5
+    bantime: 60
+  - name: nginx-limit-req
+    filter: nginx-limit-req
+    logpath: /var/log/nginx/*error.log
+    findtime: 600
+    bantime: 7200
+    maxretry: 10
+  - name: nginx-http-auth
+    filter: nginx-http-auth
+    port: http,https
+    logpath: /var/log/nginx/*error.log
+    maxretry: 6
+  - name: nginx-noscript
+    filter: apache-noscript
+    port: http,https
+    logpath: /var/log/nginx/*access.log
+    maxretry: 6
+  - name: nginx-botsearch
+    filter: nginx-botsearch
+    port: http,https
+    logpath: /var/log/nginx/*access.log
+    maxretry: 2
+auditd_exclusion_rules:
+  - '-a always,exclude -F msgtype=CWD'
+  - '-a always,exclude -F msgtype=EOE'
+  - '-a always,exclude -F msgtype=CRYPTO_KEY_USER'
+  - '-a never,user -F subj_type=crond_t'
+  - '-a exit,never -F arch=b32 -S fork -F success=0
+    -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2'
+  - '-a exit,never -F arch=b64 -S fork -F success=0
+    -F path=/usr/lib/vmware-tools -F subj_type=initrc_t -F exit=-2'
+aide_call_without_params: false
+aide_conf_path: '/etc/aide/aide.conf'
+aide_update_db: true
+aide_summarize_changes: true
+aide_cron_email_notify_recipients:
+  - '{{ postfix_sasl_user }}'
+nginx_adminer_user: "{{ adminer_user }}"
+nginx_adminer_password: "{{ adminer_password }}"
+adminer_install_dir: '/var/www/html/adminer'
+adminer_install_filename: 'index.php'
+nginx_worker_connections: 1024
+nginx_remove_default_vhost: true
+nginx_conf_template: "{{ playbook_dir }}/templates/nginx.conf.j2"
+nginx_enable_gzip: true
+nginx_upstreams:
+  - name: php-fpm
+    servers:
+      - "unix:/var/run/php/php7.3-fpm.sock"
+nginx_extra_http_options: |
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+php_version: '7.3'
+php_vesions_install_recommends: false
+php_enable_webserver: true
+php_webserver_daemon: "nginx"
+php_default_version_debian: "7.3"
+php_enable_php_fpm: true
+php_fpm_listen: "/var/run/php/php7.3-fpm.sock"
+php_date_timezone: "{{ site_timezone }}"
+php_memory_limit: '256M'
+php_upload_max_filesize: '128M'
+php_post_max_size: '32M'
+php_packages_extra:
+  - php7.3-mysql
+  - php7.3-mbstring
+  - php7.3-intl
+  - php7.3-xsl
+  - php7.3-zip
+  - php7.3-bcmath
+  - php7.3-iconv
+  - php7.3-soap
+mysql_root_password_update: true
+mysql_user_password_update: false
+mysql_root_password: "{{ db_root_password }}"
+mysql_packages:
+  - mariadb-client
+  - mariadb-server
+certbot_create_if_missing: false
+certbot_auto_renew: false
+certbot_auto_renew_options: >-
+  --webroot -w /var/www/letsencrypt
+  --post-hook "systemctl reload nginx"
+certbot_admin_email: "{{ admin_email }}"
