@@ -1,0 +1,18 @@
+---
+- hosts: webservers
+  user: "{{ admin_username }}"
+  vars_files:
+    - "vars/common.yml"
+    - "vars/wordpress.yml"
+  become: true
+  roles:
+    - role: geerlingguy.mysql
+    - role: geerlingguy.nginx
+    - role: geerlingguy.certbot
+  post_tasks:
+    - name: Check if domain directory exists
+      file:
+        path: "{{ '/var/www/html/' + site_domain }}"
+        state: 'directory'
+        owner: "{{ admin_username }}"
+        group: www-data

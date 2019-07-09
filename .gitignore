@@ -1,4 +1,5 @@
 credentials/*
 group_vars/all
-hosts(.yml)?
+hosts.yml
+roles/do_droplet
 

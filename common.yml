@@ -78,6 +78,29 @@
         group: root
       with_fileglob:
         - "files/snippets/*.conf"
+    - name: Check if nginx/wordpress directory exists
+      file:
+        path: '/etc/nginx/wordpress'
+        state: 'directory'
+        mode: 0755
+        owner: root
+        group: root
+    - name: Copy files to /etc/nginx/wordpress
+      copy:
+        src: "{{ item }}"
+        dest: '/etc/nginx/wordpress'
+        mode: 0644
+        owner: root
+        group: root
+      with_fileglob:
+        - "files/wordpress/*.conf"
+    - name: Check if /var/www/html/letsencrypt directory exists
+      file:
+        path: '/var/www/html/letsencrypt/.well-known/acme-challenge'
+        state: 'directory'
+        mode: 0750
+        owner: "{{ admin_username }}"
+        group: www-data
     - name: 'Add cron job for certbot renewal.'
       cron:
         name: Certbot automatic renewal.

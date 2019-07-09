@@ -1,0 +1,33 @@
+---
+nginx_vhosts:
+  - listen: '80 default_server'
+    server_name: "{{ site_domain + ' www.' + site_domain }}"
+    root: "{{ '/var/www/html/' + site_domain }}"
+    index: "index.html index.htm index.php"
+    filename: "{{ site_domain + '.conf' }}"
+    error_log: "{{ '/var/log/nginx/error_' + site_domain + '.log' }}"
+    access_log: "{{ '/var/log/nginx/access_' + site_domain + '.log' }}"
+    extra_parameters: |
+      include snippets/letsencrypt.conf;
+      include snippets/adminer.conf;
+mysql_user_password_update: true
+mysql_databases:
+  - name: "{{ db_name }}"
+mysql_users:
+  - name: "{{ db_user }}"
+    password: "{{ db_user_password }}"
+    encryted: yes
+    priv: "{{ mysql_databases.0.name }}.*:ALL"
+certbot_create_if_missing: true
+certbot_create_standalone_stop_services: []
+certbot_create_command: >-
+  {{ certbot_script }} certonly --webroot
+  -w /var/www/html/letsencrypt
+  --noninteractive --agree-tos
+  --email {{ cert_item.email | default(certbot_admin_email) }}
+  -d {{ cert_item.domains | join(',') }}
+certbot_admin_email: "{{ admin_email }}"
+certbot_certs:
+  - domains:
+      - "{{ site_domain }}"
+      - "{{ 'www.' + site_domain }}"

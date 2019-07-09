@@ -1,0 +1,22 @@
+---
+- hosts: webservers
+  user: "{{ admin_username }}"
+  vars_files:
+    - "vars/common.yml"
+    - "vars/enforce_ssl.yml"
+  become: true
+  roles:
+    - role: geerlingguy.nginx
+  post_tasks:
+    - name: Add ssl certificate and key
+      lineinfile:
+        path: "{{ '/etc/nginx/sites-enabled/' + site_domain + '.conf' }}"
+        insertafter: "{{ item.insertafter }}"
+        line: "{{ item.line }}"
+      loop:
+        - insertafter: '^\s*ssl_ciphers'
+          line: "{{ '    ssl_certificate /etc/letsencrypt/live/' +
+          site_domain + '/fullchain.pem;' }}"
+        - insertafter: '^\s*ssl_certificate'
+          line: "{{ '    ssl_certificate_key /etc/letsencrypt/live/' +
+          site_domain + '/privkey.pem;' }}"
